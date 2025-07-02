@@ -1,0 +1,194 @@
+classDiagram
+    class User {
+        +string id
+        +string email
+        +string username
+        +string avatar_url
+        +DateTime created_at
+        +DateTime last_login
+        +UserPreferences preferences
+        +__init__(email: str, username: str)
+        +authenticate(password: str) bool
+        +update_preferences(prefs: UserPreferences) void
+        +get_projects() List[Project]
+    }
+
+    class UserPreferences {
+        +string theme
+        +string default_export_format
+        +bool notifications_enabled
+        +string preferred_ai_voice
+        +__init__()
+        +update_theme(theme: str) void
+        +toggle_notifications() void
+    }
+
+    class Project {
+        +string id
+        +string user_id
+        +string title
+        +string description
+        +ProjectType type
+        +ProjectStatus status
+        +Dict settings
+        +DateTime created_at
+        +DateTime updated_at
+        +__init__(user_id: str, title: str, type: ProjectType)
+        +add_scene(scene: Scene) void
+        +remove_scene(scene_id: str) void
+        +export_video(format: ExportFormat) Video
+        +generate_captions() List[Caption]
+        +generate_hashtags() List[Hashtag]
+    }
+
+    class Scene {
+        +string id
+        +string project_id
+        +int order
+        +float duration
+        +Dict content
+        +List[Asset] assets
+        +List[Animation] animations
+        +__init__(project_id: str, order: int)
+        +add_asset(asset: Asset) void
+        +apply_template(template: Template) void
+        +render() bytes
+    }
+
+    class Template {
+        +string id
+        +string name
+        +string category
+        +string description
+        +string thumbnail_url
+        +Dict configuration
+        +List[TemplateAsset] default_assets
+        +bool is_premium
+        +int usage_count
+        +__init__(name: str, category: str)
+        +apply_to_project(project: Project) void
+        +clone() Template
+    }
+
+    class Asset {
+        +string id
+        +string project_id
+        +AssetType type
+        +string file_url
+        +Dict metadata
+        +Dict transform_properties
+        +__init__(project_id: str, type: AssetType, file_url: str)
+        +resize(width: int, height: int) void
+        +apply_filter(filter: Filter) void
+        +get_duration() float
+    }
+
+    class AIService {
+        +string service_name
+        +Dict api_credentials
+        +__init__(service_name: str, credentials: Dict)
+        +generate_video(prompt: str, options: Dict) VideoGenerationResult
+        +generate_caption(content: str, style: str) str
+        +generate_hashtags(content: str, count: int) List[str]
+        +text_to_speech(text: str, voice_id: str) bytes
+        +check_rate_limit() bool
+    }
+
+    class VideoGenerator {
+        +List[AIService] ai_services
+        +__init__(services: List[AIService])
+        +create_from_text(prompt: str, style: VideoStyle) Video
+        +create_from_script(script: str, scenes: List[ScenePrompt]) Video
+        +apply_faceless_optimization(video: Video) Video
+        +batch_generate(requests: List[GenerationRequest]) List[Video]
+    }
+
+    class CaptionGenerator {
+        +AIService ai_service
+        +Dict viral_patterns
+        +__init__(ai_service: AIService)
+        +generate_viral_caption(content: str, tone: str) str
+        +optimize_for_engagement(caption: str) str
+        +add_call_to_action(caption: str, cta_type: str) str
+    }
+
+    class HashtagGenerator {
+        +AIService ai_service
+        +HashtagAnalyzer analyzer
+        +__init__(ai_service: AIService, analyzer: HashtagAnalyzer)
+        +generate_hashtags(content: str, niche: str, count: int) List[Hashtag]
+        +analyze_trending_tags(category: str) List[str]
+        +optimize_reach(hashtags: List[str]) List[str]
+    }
+
+    class VideoProcessor {
+        +string ffmpeg_path
+        +int max_concurrent_jobs
+        +__init__(ffmpeg_path: str)
+        +render_video(scenes: List[Scene], export_format: ExportFormat) bytes
+        +add_subtitles(video: bytes, captions: List[Caption]) bytes
+        +optimize_for_instagram(video: bytes) bytes
+        +create_thumbnail(video: bytes, timestamp: float) bytes
+    }
+
+    class ExportManager {
+        +VideoProcessor processor
+        +FileStorage storage
+        +__init__(processor: VideoProcessor, storage: FileStorage)
+        +export_to_instagram_format(project: Project) ExportResult
+        +batch_export(projects: List[Project], formats: List[ExportFormat]) List[ExportResult]
+        +schedule_export(project: Project, scheduled_time: DateTime) str
+    }
+
+    class FileStorage {
+        +string storage_provider
+        +Dict credentials
+        +__init__(provider: str, credentials: Dict)
+        +upload_file(file: bytes, path: str) str
+        +download_file(url: str) bytes
+        +delete_file(url: str) bool
+        +get_signed_url(path: str, expiry: int) str
+    }
+
+    class AnalyticsTracker {
+        +Database db
+        +__init__(db: Database)
+        +track_video_creation(user_id: str, project_id: str) void
+        +track_export(user_id: str, project_id: str, format: str) void
+        +track_template_usage(template_id: str, user_id: str) void
+        +get_user_analytics(user_id: str) Dict
+        +get_viral_performance_metrics() Dict
+    }
+
+    class CollaborationManager {
+        +Dict active_sessions
+        +__init__()
+        +join_session(user_id: str, project_id: str) str
+        +leave_session(session_id: str) void
+        +broadcast_change(session_id: str, change: Dict) void
+        +apply_operational_transform(changes: List[Dict]) Dict
+    }
+
+    %% Relationships
+    User ||--o{ Project : creates
+    User ||--|| UserPreferences : has
+    Project ||--o{ Scene : contains
+    Project ||--|| Template : uses
+    Scene ||--o{ Asset : includes
+    Template ||--o{ Asset : defines
+    
+    VideoGenerator --> AIService : uses
+    CaptionGenerator --> AIService : uses
+    HashtagGenerator --> AIService : uses
+    
+    ExportManager --> VideoProcessor : uses
+    ExportManager --> FileStorage : uses
+    VideoProcessor --> Scene : processes
+    
+    Project --> CaptionGenerator : generates_captions
+    Project --> HashtagGenerator : generates_hashtags
+    Project --> VideoGenerator : creates_video
+    
+    AnalyticsTracker --> User : tracks
+    AnalyticsTracker --> Project : monitors
+    CollaborationManager --> Project : enables_sharing
